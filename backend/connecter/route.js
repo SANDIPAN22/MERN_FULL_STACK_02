@@ -1,13 +1,45 @@
 const express=require('express')
 const router=express.Router()
 const user=require('../model/user')
-
+const {check, validationResult}=require('express-validator')
 
 router.get('/',(req,res)=>{
     res.send('homepage')
 })
 
-router.post('/signup',midi1,(req,res)=>{
+router.post('/signup',[
+    check('name','Enter name (Minimum length 4)')
+    .exists()
+    .isLength({min: 4})
+    .trim(),
+
+    check('email','Write proper Email')
+    .exists()
+    .isEmail()
+    .normalizeEmail(),
+
+    check('password','Use Strong Password')
+    .exists()
+    .isStrongPassword(),
+
+    check('phone').custom((val,{req})=>{
+        
+        if (val.toString().length==10)
+        {
+            
+        return true
+
+        }
+        throw new Error ('PHONE number must be of 10 digits!')
+    })
+
+],(req,res)=>{
+    const e=validationResult(req)
+    if(!e.isEmpty())
+    {
+        res.json({error:e})
+    }
+    else{
     const  {name, email , password, phone }= req.body
     user.findOne({email:email})
     .then((yes)=>{
@@ -26,28 +58,37 @@ router.post('/signup',midi1,(req,res)=>{
             .catch((err)=> res.status(402).json({error:'Unable to store'}))
         }
     })
+
+   }
    
 })
 
-router.post('/login',async(req,res)=>{
-    const {email,password}=req.body
-    const u=await user.findOne({email:email})
-    if(u)
-    res.json(u)
-    res.json({error: "Wrong Cred"})
+router.post('/login',[
+    check('email','Write Proper Email')
+    .exists()
+    .isEmail()
+    .normalizeEmail(),
+    check('password','Use String Password')
+    .exists()
+    .isStrongPassword()
+],async(req,res)=>{
+    const e=validationResult(req)
+    if(!e.isEmpty())
+    {
+        res.json(e.mapped())
+    }
+    else{
+        const {email,password}=req.body
+        const u=await user.findOne({email:email})
+        if(u)
+        res.json(u)
+        else{
+        res.json({error: "Wrong Cred"})
+        }
+    }
 })
 
-function midi1(req,res,next){
-    const  {name, email , password, phone}= req.body
-     if (!name || !email  || !password || !phone)
-     {
-         res.status(422).json({error:'wrong format submitted!'})
-     }
-     else{
-         next();
-        
-     }
- }
+
 // router.get('/contact',(req,res)=>{
 //     res.send('contact me !')
 // })
