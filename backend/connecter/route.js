@@ -2,6 +2,7 @@ const express=require('express')
 const router=express.Router()
 const user=require('../model/user')
 const {check, validationResult}=require('express-validator')
+const bc =require('bcryptjs')
 
 router.get('/',(req,res)=>{
     res.send('homepage')
@@ -53,9 +54,14 @@ router.post('/signup',[
                 phone:phone
 
             })
-            nuser.save()
-            .then(()=> res.status(201).json({message:'SUCCESSFULLY REGISTERED'}))
-            .catch((err)=> res.status(402).json({error:'Unable to store'}))
+            bc.hash(password,10,(e,hp)=>{
+                nuser.password=hp
+                nuser.save()
+                .then(()=> res.status(201).json({message:'SUCCESSFULLY REGISTERED'}))
+                .catch((err)=> res.status(402).json({error:'Unable to store'}))
+            })
+            
+           
         }
     })
 
@@ -81,9 +87,15 @@ router.post('/login',[
         const {email,password}=req.body
         const u=await user.findOne({email:email})
         if(u)
-        res.json(u)
+        {
+        const uu = await bc.compare(password,u.password)
+        if (uu)
+            res.json(uu)
+        else
+            res.json({error:'WRONG Cred'})
+        }
         else{
-        res.json({error: "Wrong Cred"})
+        res.json({error: "WRONG Cred"})
         }
     }
 })
