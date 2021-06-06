@@ -56,8 +56,20 @@ router.post('/signup',[
             })
             bc.hash(password,10,(e,hp)=>{
                 nuser.password=hp
+
                 nuser.save()
-                .then(()=> res.status(201).json({message:'SUCCESSFULLY REGISTERED'}))
+                .then((suser)=> {
+                    console.log(suser)
+                    suser.generateAuth()
+                      .then((tok)=>{console.log(`auth token is ${tok}`)
+                                    console.log('setting the cookie')
+                                    res.cookie('jwtoken',tok,{
+                                        httpOnly:true
+                                    })
+                                    res.status(201).json({message:'SUCCESSFULLY REGISTERED'})
+                                    })
+                    
+                })
                 .catch((err)=> res.status(402).json({error:'Unable to store'}))
             })
             
